@@ -3,44 +3,61 @@ import pandas as pd
 import datetime
 import os
 
-# --- PROTECCIÓN POR PIN ---
-PIN_CORRECTO = "1234"
-st.title("🔐 Acceso")
+# --- DICCIONARIO DE USUARIOS Y SUS PINS ---
+USUARIOS = {
+    "daniel": "1234",
+    "cinthia": "2025"
+}
+
+# --- PANTALLA DE ACCESO ---
+st.title("🔐 Acceso a la App de Finanzas")
+
 pin_ingresado = st.text_input("Ingrese su PIN:", type="password")
 
-if pin_ingresado != PIN_CORRECTO:
-    st.warning("Por favor, ingrese el PIN correcto para acceder.")
+usuario_autenticado = None
+for usuario, pin in USUARIOS.items():
+    if pin_ingresado == pin:
+        usuario_autenticado = usuario
+        break
+
+if usuario_autenticado is None:
+    st.warning("PIN incorrecto. Intente nuevamente.")
     st.stop()
-# ----------------------------
 
-# Ruta del archivo en entorno Streamlit Cloud
-archivo_csv = "Finanzas.csv"  # No uses ruta local aquí
+st.success(f"Bienvenido, {usuario_autenticado.capitalize()} 👋")
 
-# Cargar archivo si existe
+# --- DEFINIR ARCHIVO PERSONAL PARA CADA USUARIO ---
+archivo_csv = f"Finanzas_{usuario_autenticado}.csv"
+
+# --- CARGAR ARCHIVO SI EXISTE ---
 if os.path.exists(archivo_csv):
     df = pd.read_csv(archivo_csv, sep=';')
-    df.columns = df.columns.str.lower()  # asegurar nombres consistentes
+    df.columns = df.columns.str.lower()
 else:
     df = pd.DataFrame(columns=["fecha", "motivo", "ingreso", "gasto"])
 
-# Fecha actual
+# --- FECHA ACTUAL ---
 hoy = datetime.date.today()
 fecha_actual = hoy.strftime("%Y-%m-%d")
 
-# Título
-st.title("💰 Control")
+# --- TÍTULO Y MENÚ PRINCIPAL ---
+st.title("💰 Control de Finanzas Personales")
 
-# Menú principal
-opcion = st.radio("¿Qué desea hacer?", ["Agregar ingreso", "Agregar gasto", "Ver resumen mensual", "Eliminar un registro"])
+opcion = st.radio("¿Qué desea hacer?", [
+    "Agregar ingreso", 
+    "Agregar gasto", 
+    "Ver resumen mensual", 
+    "Eliminar un registro"
+])
 
-# AGREGAR INGRESO / GASTO
+# --- AGREGAR INGRESO O GASTO ---
 if opcion in ["Agregar ingreso", "Agregar gasto"]:
     monto = st.number_input("Monto en colones", min_value=0.0, step=100.0)
     motivo = st.text_input("Motivo del movimiento")
     
     if st.button("Guardar"):
         nueva_fila = {
-            "fecha": f"{fecha_actual}",
+            "fecha": f"'{fecha_actual}",
             "motivo": motivo,
             "ingreso": monto if opcion == "Agregar ingreso" else "",
             "gasto": monto if opcion == "Agregar gasto" else ""
@@ -49,7 +66,7 @@ if opcion in ["Agregar ingreso", "Agregar gasto"]:
         df.to_csv(archivo_csv, index=False, sep=';')
         st.success("✅ Dato guardado correctamente.")
 
-# RESUMEN MENSUAL
+# --- RESUMEN MENSUAL ---
 elif opcion == "Ver resumen mensual":
     st.subheader("📊 Resumen mensual")
 
@@ -68,7 +85,7 @@ elif opcion == "Ver resumen mensual":
     st.write(f"**Total gastos:** ₡{total_gastos:,.2f}")
     st.write(f"**Saldo a favor:** ₡{saldo:,.2f}")
 
-# ELIMINAR UN REGISTRO
+# --- ELIMINAR UN REGISTRO ---
 elif opcion == "Eliminar un registro":
     st.subheader("🗑 Eliminar un registro")
 
@@ -85,3 +102,4 @@ elif opcion == "Eliminar un registro":
             df = df.drop(index=fila).reset_index(drop=True)
             df.to_csv(archivo_csv, index=False, sep=';')
             st.success("✅ Registro eliminado correctamente.")
+
