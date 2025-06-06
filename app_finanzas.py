@@ -5,7 +5,7 @@ import os
 
 # --- PROTECCIÓN POR PIN ---
 PIN_CORRECTO = "1234"
-st.title("🔐 Acceso a la App de Finanzas")
+st.title("🔐 Acceso")
 pin_ingresado = st.text_input("Ingrese su PIN:", type="password")
 
 if pin_ingresado != PIN_CORRECTO:
@@ -28,7 +28,7 @@ hoy = datetime.date.today()
 fecha_actual = hoy.strftime("%Y-%m-%d")
 
 # Título
-st.title("💰 Control de Finanzas Personales")
+st.title("💰 Control")
 
 # Menú principal
 opcion = st.radio("¿Qué desea hacer?", ["Agregar ingreso", "Agregar gasto", "Ver resumen mensual", "Eliminar un registro"])
