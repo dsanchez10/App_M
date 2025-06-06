@@ -10,7 +10,7 @@ USUARIOS = {
 }
 
 # --- PANTALLA DE ACCESO ---
-st.title("🔐 Acceso a la App de Finanzas")
+st.title("🔐 Acceso")
 
 pin_ingresado = st.text_input("Ingrese su PIN:", type="password")
 
@@ -41,7 +41,7 @@ hoy = datetime.date.today()
 fecha_actual = hoy.strftime("%Y-%m-%d")
 
 # --- TÍTULO Y MENÚ PRINCIPAL ---
-st.title("💰 Control de Finanzas Personales")
+st.title("💰 Control")
 
 opcion = st.radio("¿Qué desea hacer?", [
     "Agregar ingreso", 
