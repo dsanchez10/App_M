@@ -3,8 +3,18 @@ import pandas as pd
 import datetime
 import os
 
-# Ruta del archivo en Google Drive
-archivo_csv = "/Users/oscardaniel/Google Drive/Mi unidad/Finanzas.csv"
+# --- PROTECCIÓN POR PIN ---
+PIN_CORRECTO = "1234"
+st.title("🔐 Acceso a la App de Finanzas")
+pin_ingresado = st.text_input("Ingrese su PIN:", type="password")
+
+if pin_ingresado != PIN_CORRECTO:
+    st.warning("Por favor, ingrese el PIN correcto para acceder.")
+    st.stop()
+# ----------------------------
+
+# Ruta del archivo en entorno Streamlit Cloud
+archivo_csv = "Finanzas.csv"  # No uses ruta local aquí
 
 # Cargar archivo si existe
 if os.path.exists(archivo_csv):
