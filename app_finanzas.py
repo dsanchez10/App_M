@@ -40,7 +40,7 @@ if opcion in ["Agregar ingreso", "Agregar gasto"]:
     
     if st.button("Guardar"):
         nueva_fila = {
-            "fecha": f"'{fecha_actual}",
+            "fecha": f"{fecha_actual}",
             "motivo": motivo,
             "ingreso": monto if opcion == "Agregar ingreso" else "",
             "gasto": monto if opcion == "Agregar gasto" else ""
