@@ -53,7 +53,7 @@ if opcion in ["Agregar ingreso", "Agregar gasto"]:
 
     if st.button("Guardar"):
         nuevo = [fecha_actual, motivo, monto if opcion == "Agregar ingreso" else "", monto if opcion == "Agregar gasto" else ""]
-        hoja.append_row(nuevo)
+        hoja.append_row(nuevo, value_input_option='RAW')
         st.success("✅ Movimiento guardado correctamente.")
 
 # --- RESUMEN MENSUAL ---
