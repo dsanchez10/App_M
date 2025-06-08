@@ -3,15 +3,14 @@ import pandas as pd
 import datetime
 import gspread
 import json
-import os
 from oauth2client.service_account import ServiceAccountCredentials
 
-# ---- LEER CREDENCIALES DESDE SECRETS ----
+# ---- Leer credenciales desde secrets ----
 cred_json = st.secrets["gcp_service_account"]
 with open("credenciales_temp.json", "w") as f:
     json.dump(cred_json, f)
 
-# ---- CONFIGURACIÓN GOOGLE SHEETS ----
+# ---- Configuración de acceso a Google Sheets ----
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 credenciales = ServiceAccountCredentials.from_json_keyfile_name("credenciales_temp.json", scope)
 cliente = gspread.authorize(credenciales)
@@ -91,6 +90,3 @@ elif opcion == "Eliminar un registro":
         if st.button("Eliminar"):
             hoja.delete_rows(fila)
             st.success("✅ Registro eliminado correctamente.")
-
-# 🔚 Eliminar el archivo temporal con las credenciales
-os.remove("credenciales_temp.json")
