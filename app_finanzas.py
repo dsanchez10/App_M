@@ -26,14 +26,22 @@ if pin_ingresado not in PIN_USUARIOS:
 usuario = PIN_USUARIOS[pin_ingresado]
 st.success(f"Bienvenido, {usuario} 👋")
 
-# Abre la hoja de ese usuario
+# Abre la hoja del usuario
 try:
     hoja = cliente.open(usuario).sheet1
 except Exception as e:
     st.error(f"No se pudo abrir la hoja del usuario '{usuario}': {e}")
     st.stop()
 
-# Carga los datos
+# Validar encabezados
+encabezados = hoja.row_values(1)
+esperados = ["Fecha", "Motivo", "Ingreso", "Gasto"]
+
+if encabezados != esperados:
+    st.error("⚠️ La hoja no tiene los encabezados correctos.\nDebe tener: Fecha | Motivo | Ingreso | Gasto")
+    st.stop()
+
+# Cargar datos
 datos = hoja.get_all_records()
 df = pd.DataFrame(datos)
 
@@ -78,9 +86,11 @@ elif opcion == "Eliminar un registro":
         st.info("No hay datos registrados aún.")
     else:
         st.subheader("🗑 Eliminar un registro")
-        df.index += 2  # Ajustar por encabezado + 1
-        st.dataframe(df)
-        fila = st.number_input("Indique el número de fila que desea eliminar (según la tabla):", min_value=2, max_value=len(df)+1)
+        df_mostrar = df.copy()
+        df_mostrar.index = range(2, len(df)+2)  # Para que coincida con las filas reales en Sheets
+        st.dataframe(df_mostrar)
+
+        fila = st.number_input("Indique el número de fila que desea eliminar (según la tabla):", min_value=2, max_value=len(df)+1, step=1)
         if st.button("Eliminar"):
             hoja.delete_rows(fila)
             st.success("✅ Registro eliminado correctamente.")
