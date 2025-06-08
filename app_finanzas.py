@@ -1,105 +1,86 @@
 import streamlit as st
 import pandas as pd
 import datetime
-import os
+import gspread
+from oauth2client.service_account import ServiceAccountCredentials
 
-# --- DICCIONARIO DE USUARIOS Y SUS PINS ---
-USUARIOS = {
-    "daniel": "1234",
-    "cinthia": "2025"
+# ---- CONFIGURACIÓN GOOGLE SHEETS ----
+scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+credenciales = ServiceAccountCredentials.from_json_keyfile_name("credenciales.json", scope)
+cliente = gspread.authorize(credenciales)
+
+# 🔄 Abre la hoja correspondiente según el usuario
+PIN_USUARIOS = {
+    "1234": "Daniel",
+    "5678": "Cinthia"
 }
 
-# --- PANTALLA DE ACCESO ---
-st.title("🔐 Acceso")
-
+# --- Login con PIN ---
+st.title("🔐 Acceso a Finanzas")
 pin_ingresado = st.text_input("Ingrese su PIN:", type="password")
 
-usuario_autenticado = None
-for usuario, pin in USUARIOS.items():
-    if pin_ingresado == pin:
-        usuario_autenticado = usuario
-        break
-
-if usuario_autenticado is None:
-    st.warning("PIN incorrecto. Intente nuevamente.")
+if pin_ingresado not in PIN_USUARIOS:
+    st.warning("Por favor, ingrese un PIN válido.")
     st.stop()
 
-st.success(f"Bienvenido, {usuario_autenticado.capitalize()} 👋")
+usuario = PIN_USUARIOS[pin_ingresado]
+st.success(f"Bienvenido, {usuario} 👋")
 
-# --- DEFINIR ARCHIVO PERSONAL PARA CADA USUARIO ---
-archivo_csv = f"Finanzas_{usuario_autenticado}.csv"
+# Abre la hoja de ese usuario
+try:
+    hoja = cliente.open(usuario).sheet1
+except Exception as e:
+    st.error(f"No se pudo abrir la hoja del usuario '{usuario}': {e}")
+    st.stop()
 
-# --- CARGAR ARCHIVO SI EXISTE ---
-if os.path.exists(archivo_csv):
-    df = pd.read_csv(archivo_csv, sep=';')
-    df.columns = df.columns.str.lower()
-else:
-    df = pd.DataFrame(columns=["fecha", "motivo", "ingreso", "gasto"])
+# Carga los datos
+datos = hoja.get_all_records()
+df = pd.DataFrame(datos)
 
-# --- FECHA ACTUAL ---
-hoy = datetime.date.today()
-fecha_actual = hoy.strftime("%Y-%m-%d")
+# --- Menú principal ---
+opcion = st.radio("¿Qué desea hacer?", ["Agregar ingreso", "Agregar gasto", "Ver resumen mensual", "Eliminar un registro"])
+fecha_actual = datetime.date.today().strftime("%Y-%m-%d")
 
-# --- TÍTULO Y MENÚ PRINCIPAL ---
-st.title("💰 Control")
-
-opcion = st.radio("¿Qué desea hacer?", [
-    "Agregar ingreso", 
-    "Agregar gasto", 
-    "Ver resumen mensual", 
-    "Eliminar un registro"
-])
-
-# --- AGREGAR INGRESO O GASTO ---
+# --- AGREGAR INGRESO / GASTO ---
 if opcion in ["Agregar ingreso", "Agregar gasto"]:
     monto = st.number_input("Monto en colones", min_value=0.0, step=100.0)
     motivo = st.text_input("Motivo del movimiento")
-    
+
     if st.button("Guardar"):
-        nueva_fila = {
-            "fecha": f"'{fecha_actual}",
-            "motivo": motivo,
-            "ingreso": monto if opcion == "Agregar ingreso" else "",
-            "gasto": monto if opcion == "Agregar gasto" else ""
-        }
-        df = pd.concat([df, pd.DataFrame([nueva_fila])], ignore_index=True)
-        df.to_csv(archivo_csv, index=False, sep=';')
-        st.success("✅ Dato guardado correctamente.")
+        nuevo = [fecha_actual, motivo, monto if opcion == "Agregar ingreso" else "", monto if opcion == "Agregar gasto" else ""]
+        hoja.append_row(nuevo)
+        st.success("✅ Movimiento guardado correctamente.")
 
 # --- RESUMEN MENSUAL ---
 elif opcion == "Ver resumen mensual":
-    st.subheader("📊 Resumen mensual")
+    if not df.empty:
+        df["Fecha"] = pd.to_datetime(df["Fecha"], errors='coerce')
+        df["Ingreso"] = pd.to_numeric(df["Ingreso"], errors='coerce')
+        df["Gasto"] = pd.to_numeric(df["Gasto"], errors='coerce')
 
-    df["fecha"] = df["fecha"].astype(str).str.replace("'", "")
-    df["fecha"] = pd.to_datetime(df["fecha"], errors='coerce')
-    df["ingreso"] = pd.to_numeric(df["ingreso"], errors='coerce')
-    df["gasto"] = pd.to_numeric(df["gasto"], errors='coerce')
+        mes_actual = datetime.date.today().month
+        df_mes = df[df["Fecha"].dt.month == mes_actual]
 
-    df_mes = df[(df["fecha"].dt.month == hoy.month) & (df["fecha"].dt.year == hoy.year)]
+        total_ingreso = df_mes["Ingreso"].sum()
+        total_gasto = df_mes["Gasto"].sum()
+        saldo = total_ingreso - total_gasto
 
-    total_ingresos = df_mes["ingreso"].sum()
-    total_gastos = df_mes["gasto"].sum()
-    saldo = total_ingresos - total_gastos
+        st.subheader("📊 Resumen mensual")
+        st.write(f"**Total ingresos:** ₡{total_ingreso:,.2f}")
+        st.write(f"**Total gastos:** ₡{total_gasto:,.2f}")
+        st.write(f"**Saldo a favor:** ₡{saldo:,.2f}")
+    else:
+        st.info("Aún no hay datos registrados.")
 
-    st.write(f"**Total ingresos:** ₡{total_ingresos:,.2f}")
-    st.write(f"**Total gastos:** ₡{total_gastos:,.2f}")
-    st.write(f"**Saldo a favor:** ₡{saldo:,.2f}")
-
-# --- ELIMINAR UN REGISTRO ---
+# --- ELIMINAR REGISTRO ---
 elif opcion == "Eliminar un registro":
-    st.subheader("🗑 Eliminar un registro")
-
     if df.empty:
         st.info("No hay datos registrados aún.")
     else:
-        df_preview = df.copy()
-        df_preview.index.name = "N°"
-        st.dataframe(df_preview)
-
-        fila = st.number_input("Ingrese el número de fila que desea eliminar:", min_value=0, max_value=len(df)-1, step=1)
-
-        if st.button("Eliminar registro"):
-            df = df.drop(index=fila).reset_index(drop=True)
-            df.to_csv(archivo_csv, index=False, sep=';')
+        st.subheader("🗑 Eliminar un registro")
+        df.index += 2  # Ajustar por encabezado + 1
+        st.dataframe(df)
+        fila = st.number_input("Indique el número de fila que desea eliminar (según la tabla):", min_value=2, max_value=len(df)+1)
+        if st.button("Eliminar"):
+            hoja.delete_rows(fila)
             st.success("✅ Registro eliminado correctamente.")
-
