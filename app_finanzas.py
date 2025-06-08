@@ -6,7 +6,7 @@ import json
 from oauth2client.service_account import ServiceAccountCredentials
 
 # ---- CONFIGURACIÓN GOOGLE SHEETS DESDE st.secrets ----
-cred_json = st.secrets["gcp_service_account"].to_dict()
+cred_json = dict(st.secrets["gcp_service_account"])
 with open("credenciales_temp.json", "w") as f:
     json.dump(cred_json, f)
 
