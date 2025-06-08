@@ -5,12 +5,11 @@ import gspread
 import json
 from oauth2client.service_account import ServiceAccountCredentials
 
-# ---- Leer credenciales desde secrets ----
-cred_json = st.secrets["gcp_service_account"]
+# ---- CONFIGURACIÓN GOOGLE SHEETS DESDE st.secrets ----
+cred_json = st.secrets["gcp_service_account"].to_dict()
 with open("credenciales_temp.json", "w") as f:
     json.dump(cred_json, f)
 
-# ---- Configuración de acceso a Google Sheets ----
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 credenciales = ServiceAccountCredentials.from_json_keyfile_name("credenciales_temp.json", scope)
 cliente = gspread.authorize(credenciales)
